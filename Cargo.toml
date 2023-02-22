@@ -1,0 +1,12 @@
+[package]
+name = "re1"
+version = "0.1.0"
+authors = ["Thalia Archibald", "Russ Cox"]
+edition = "2021"
+description = "A port of re1, Russ Cox’s simple, virtual machine–based regular expression engine"
+repository = "https://github.com/thaliaarchi/re1-rust"
+license = "BSD-3-Clause"
+keywords = ["regexp"]
+categories = ["text-processing"]
+
+[dependencies]
