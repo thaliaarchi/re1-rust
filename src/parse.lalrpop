@@ -1,0 +1,57 @@
+// Copyright 2023 Thalia Archibald. All Rights Reserved.
+// Copyright 2007-2009 Russ Cox. All Rights Reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+use std::convert::Infallible;
+
+use crate::lex::Token;
+use crate::Regexp;
+
+grammar;
+
+pub Regexp: Box<Regexp> = <Alt>;
+
+Alt: Box<Regexp> = {
+    <Concat>,
+    <Alt> "|" <Concat> => Box::new(Regexp::Alt(<>)),
+}
+
+Concat: Box<Regexp> = {
+    <Repeat>,
+    <Concat> <Repeat> => Box::new(Regexp::Cat(<>)),
+}
+
+Repeat: Box<Regexp> = {
+    <Single>,
+    <Single> "*" => Box::new(Regexp::Star(true, <>)),
+    <Single> "*" "?" => Box::new(Regexp::Star(false, <>)),
+    <Single> "+" => Box::new(Regexp::Plus(true, <>)),
+    <Single> "+" "?" => Box::new(Regexp::Plus(false, <>)),
+    <Single> "?" => Box::new(Regexp::Quest(true, <>)),
+    <Single> "?" "?" => Box::new(Regexp::Quest(false, <>)),
+}
+
+Single: Box<Regexp> = {
+    "(" <Alt> ")" => Box::new(Regexp::Paren(u32::MAX, <>)),
+    "(" "?" ":" <Alt> ")",
+    CHAR => Box::new(Regexp::Lit(<>)),
+    "." => Box::new(Regexp::Dot),
+}
+
+extern {
+    type Location = usize;
+    type Error = Infallible;
+
+    enum Token {
+        "|" => Token::Alt,
+        "*" => Token::Star,
+        "+" => Token::Plus,
+        "?" => Token::Quest,
+        "(" => Token::ParenL,
+        ")" => Token::ParenR,
+        ":" => Token::Colon,
+        "." => Token::Dot,
+        CHAR => Token::Char(<char>),
+    }
+}
