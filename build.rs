@@ -3,12 +3,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#[macro_use]
-extern crate lalrpop_util;
+extern crate lalrpop;
 
-mod compile;
-mod lex;
-lalrpop_mod!(parse);
-mod regexp;
-
-pub use regexp::*;
+fn main() {
+    lalrpop::process_root().unwrap();
+}

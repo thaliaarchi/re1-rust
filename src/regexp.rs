@@ -3,7 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+use std::convert::Infallible;
 use std::fmt::{self, Display, Formatter};
+
+use lalrpop_util::ParseError;
+
+use crate::lex::{Lexer, Token};
+use crate::parse::RegexpParser;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Regexp {
@@ -15,6 +21,12 @@ pub enum Regexp {
     Quest(/*greedy*/ bool, Box<Regexp>),
     Star(/*greedy*/ bool, Box<Regexp>),
     Plus(/*greedy*/ bool, Box<Regexp>),
+}
+
+impl Regexp {
+    pub fn parse(s: &str) -> Result<Box<Regexp>, ParseError<usize, Token, Infallible>> {
+        RegexpParser::new().parse(Lexer::new(s))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
