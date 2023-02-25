@@ -33,7 +33,7 @@ Repeat: Box<Regexp> = {
 }
 
 Single: Box<Regexp> = {
-    "(" <Alt> ")" => Box::new(Regexp::Paren(u32::MAX, <>)),
+    "(" <Alt> ")" => Box::new(Regexp::Paren(usize::MAX, <>)),
     "(" "?" ":" <Alt> ")",
     CHAR => Box::new(Regexp::Lit(<>)),
     "." => Box::new(Regexp::Dot),

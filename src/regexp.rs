@@ -17,7 +17,7 @@ pub enum Regexp {
     Cat(Box<Regexp>, Box<Regexp>),
     Lit(char),
     Dot,
-    Paren(u32, Box<Regexp>),
+    Paren(usize, Box<Regexp>),
     Quest(/*greedy*/ bool, Box<Regexp>),
     Star(/*greedy*/ bool, Box<Regexp>),
     Plus(/*greedy*/ bool, Box<Regexp>),
@@ -36,12 +36,42 @@ pub enum Inst {
     Jmp(usize),
     Split(usize, usize),
     Any,
-    Save(u32),
+    Save(usize),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prog {
     pub insts: Vec<Inst>,
+    pub pc: usize,
+}
+
+impl Prog {
+    #[inline]
+    pub fn inst(&self) -> Option<&Inst> {
+        self.insts.get(self.pc)
+    }
+
+    #[inline]
+    pub fn next(&mut self) -> &mut Self {
+        self.pc += 1;
+        self
+    }
+
+    #[inline]
+    pub fn jump(&mut self, pc: usize) -> &mut Self {
+        self.pc = pc;
+        self
+    }
+
+    pub fn nsaved(&self) -> usize {
+        let mut count = 0;
+        for inst in &self.insts {
+            if let Inst::Save(n) = inst {
+                count = count.max(n + 1);
+            }
+        }
+        count
+    }
 }
 
 impl Display for Regexp {
