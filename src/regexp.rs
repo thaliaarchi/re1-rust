@@ -25,14 +25,35 @@ pub enum Regexp {
 
 impl Regexp {
     pub fn parse(s: &str) -> Result<Box<Regexp>, ParseError<usize, Token, Infallible>> {
-        RegexpParser::new().parse(Lexer::new(s))
+        let mut re = RegexpParser::new().parse(Lexer::new(s))?;
+        re.number_parens(1);
+        Ok(re)
     }
 
-    pub fn parse_wrapped(s: &str) -> Result<Box<Regexp>, ParseError<usize, Token, Infallible>> {
-        let re = Regexp::parse(s)?;
-        let paren = Box::new(Regexp::Paren(0, re));
+    pub fn unanchored(self: Box<Self>) -> Box<Self> {
+        let paren = Box::new(Regexp::Paren(0, self));
         let dot_star = Box::new(Regexp::Star(false, Box::new(Regexp::Dot)));
-        Ok(Box::new(Regexp::Cat(dot_star, paren)))
+        Box::new(Regexp::Cat(dot_star, paren))
+    }
+
+    fn number_parens(&mut self, mut next: usize) -> usize {
+        match self {
+            Regexp::Alt(left, right) | Regexp::Cat(left, right) => {
+                next = left.number_parens(next);
+                right.number_parens(next)
+            }
+            Regexp::Lit(_) | Regexp::Dot => next,
+            Regexp::Paren(id, inner) => {
+                if *id == usize::MAX {
+                    *id = next;
+                    next += 1;
+                }
+                inner.number_parens(next)
+            }
+            Regexp::Quest(_, inner) | Regexp::Star(_, inner) | Regexp::Plus(_, inner) => {
+                inner.number_parens(next)
+            }
+        }
     }
 }
 

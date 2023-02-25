@@ -17,8 +17,8 @@ fn main() {
             exit(2);
         }
     };
-    let re = match Regexp::parse_wrapped(&pattern) {
-        Ok(re) => re,
+    let re = match Regexp::parse(&pattern) {
+        Ok(re) => re.unanchored(),
         Err(err) => {
             eprintln!("parse: {}", err);
             exit(1);
