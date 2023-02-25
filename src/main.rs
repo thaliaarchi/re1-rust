@@ -29,7 +29,7 @@ fn main() {
     println!("{prog}");
     for s in args {
         println!("Matching {s}");
-        let mut vm = VM::new(&prog, &s);
+        let mut vm = VM::new(&prog, &s, false);
         println!("recursive {}", vm.match_recursive(&mut []));
         vm.reset();
         println!("recursiveloop {}", vm.match_recursive_loop(&mut []));

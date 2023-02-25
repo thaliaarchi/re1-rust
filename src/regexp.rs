@@ -48,7 +48,7 @@ pub enum Inst {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prog {
-    pub insts: Vec<Inst>,
+    pub(crate) insts: Vec<Inst>,
 }
 
 impl Prog {
@@ -79,22 +79,26 @@ pub struct VM<'i, 's> {
     pc: usize,
     s: &'s str,
     offset: usize,
+    debug: bool,
 }
 
 impl<'i, 's> VM<'i, 's> {
     #[inline]
-    pub fn new(prog: &'i Prog, s: &'s str) -> Self {
+    pub fn new(prog: &'i Prog, s: &'s str, debug: bool) -> Self {
         VM {
             insts: &prog.insts,
             pc: 0,
             s,
             offset: 0,
+            debug,
         }
     }
 
-    #[inline]
     pub fn next_inst(&mut self) -> Option<&Inst> {
         let inst = self.insts.get(self.pc);
+        if self.debug {
+            println!("{self}");
+        }
         if inst.is_some() {
             self.pc += 1;
         }
@@ -107,6 +111,11 @@ impl<'i, 's> VM<'i, 's> {
         let ch = chars.next();
         self.offset = self.s.len() - chars.as_str().len();
         ch
+    }
+
+    #[inline]
+    pub fn inst(&self) -> Option<&Inst> {
+        self.insts.get(self.pc)
     }
 
     #[inline]
@@ -168,5 +177,15 @@ impl Display for Prog {
             writeln!(f, "{pc:2}. {inst}")?;
         }
         Ok(())
+    }
+}
+
+impl Display for VM<'_, '_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "[offset {}] {:2}. ", self.offset, self.pc)?;
+        match self.inst() {
+            Some(inst) => write!(f, "{inst}"),
+            None => write!(f, "-"),
+        }
     }
 }
