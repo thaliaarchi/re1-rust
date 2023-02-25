@@ -6,7 +6,7 @@
 use std::env;
 use std::process::exit;
 
-use re1::{match_recursive, Regexp};
+use re1::{Regexp, VM};
 
 fn main() {
     let mut args = env::args();
@@ -17,22 +17,21 @@ fn main() {
             exit(2);
         }
     };
-    let re = match Regexp::parse(&pattern) {
+    let re = match Regexp::parse_wrapped(&pattern) {
         Ok(re) => re,
         Err(err) => {
             eprintln!("parse: {}", err);
             exit(1);
         }
     };
-    println!("{re}");
-    let mut prog = re.compile();
+    println!("{re}\n");
+    let prog = re.compile();
     println!("{prog}");
     for s in args {
         println!("Matching {s}");
-        prog.pc = 0;
-        println!(
-            "recursive {}",
-            match_recursive(&mut prog, s.char_indices(), &mut [])
-        );
+        let mut vm = VM::new(&prog, &s);
+        println!("recursive {}", vm.match_recursive(&mut []));
+        vm.reset();
+        println!("recursiveloop {}", vm.match_recursive_loop(&mut []));
     }
 }

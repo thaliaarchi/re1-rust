@@ -9,7 +9,6 @@ impl Regexp {
     pub fn compile(&self) -> Prog {
         let mut prog = Prog {
             insts: Vec::with_capacity(self.count()),
-            pc: 0,
         };
         prog.push_regexp(self);
         prog.insts.push(Inst::Match);

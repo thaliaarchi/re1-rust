@@ -27,6 +27,13 @@ impl Regexp {
     pub fn parse(s: &str) -> Result<Box<Regexp>, ParseError<usize, Token, Infallible>> {
         RegexpParser::new().parse(Lexer::new(s))
     }
+
+    pub fn parse_wrapped(s: &str) -> Result<Box<Regexp>, ParseError<usize, Token, Infallible>> {
+        let re = Regexp::parse(s)?;
+        let paren = Box::new(Regexp::Paren(0, re));
+        let dot_star = Box::new(Regexp::Star(false, Box::new(Regexp::Dot)));
+        Ok(Box::new(Regexp::Cat(dot_star, paren)))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,25 +49,17 @@ pub enum Inst {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prog {
     pub insts: Vec<Inst>,
-    pub pc: usize,
 }
 
 impl Prog {
     #[inline]
-    pub fn inst(&self) -> Option<&Inst> {
-        self.insts.get(self.pc)
+    pub fn insts(&self) -> &[Inst] {
+        &self.insts
     }
 
     #[inline]
-    pub fn next(&mut self) -> &mut Self {
-        self.pc += 1;
-        self
-    }
-
-    #[inline]
-    pub fn jump(&mut self, pc: usize) -> &mut Self {
-        self.pc = pc;
-        self
+    pub fn inst(&self, pc: usize) -> Option<&Inst> {
+        self.insts.get(pc)
     }
 
     pub fn nsaved(&self) -> usize {
@@ -71,6 +70,64 @@ impl Prog {
             }
         }
         count
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VM<'i, 's> {
+    insts: &'i [Inst],
+    pc: usize,
+    s: &'s str,
+    offset: usize,
+}
+
+impl<'i, 's> VM<'i, 's> {
+    #[inline]
+    pub fn new(prog: &'i Prog, s: &'s str) -> Self {
+        VM {
+            insts: &prog.insts,
+            pc: 0,
+            s,
+            offset: 0,
+        }
+    }
+
+    #[inline]
+    pub fn next_inst(&mut self) -> Option<&Inst> {
+        let inst = self.insts.get(self.pc);
+        if inst.is_some() {
+            self.pc += 1;
+        }
+        inst
+    }
+
+    #[inline]
+    pub fn next_char(&mut self) -> Option<char> {
+        let mut chars = self.s[self.offset..].chars();
+        let ch = chars.next();
+        self.offset = self.s.len() - chars.as_str().len();
+        ch
+    }
+
+    #[inline]
+    pub fn pc(&self) -> usize {
+        self.pc
+    }
+
+    #[inline]
+    pub fn set_pc(&mut self, pc: usize) {
+        self.pc = pc;
+    }
+
+    #[inline]
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    #[inline]
+    pub fn reset(&mut self) {
+        self.pc = 0;
+        self.offset = 0;
     }
 }
 
