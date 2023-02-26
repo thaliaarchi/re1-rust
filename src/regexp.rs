@@ -5,6 +5,7 @@
 
 use std::convert::Infallible;
 use std::fmt::{self, Display, Formatter};
+use std::rc::Rc;
 
 use lalrpop_util::ParseError;
 
@@ -97,10 +98,10 @@ impl Prog {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VM<'i, 's> {
     insts: &'i [Inst],
-    pc: usize,
+    pub pc: usize,
     s: &'s str,
-    offset: usize,
-    debug: bool,
+    pub offset: usize,
+    pub debug: bool,
 }
 
 impl<'i, 's> VM<'i, 's> {
@@ -140,21 +141,6 @@ impl<'i, 's> VM<'i, 's> {
     }
 
     #[inline]
-    pub fn pc(&self) -> usize {
-        self.pc
-    }
-
-    #[inline]
-    pub fn set_pc(&mut self, pc: usize) {
-        self.pc = pc;
-    }
-
-    #[inline]
-    pub fn offset(&self) -> usize {
-        self.offset
-    }
-
-    #[inline]
     pub fn reset(&mut self) {
         self.pc = 0;
         self.offset = 0;
@@ -183,6 +169,13 @@ impl Sub {
     #[inline]
     pub fn set(&mut self, n: usize, offset: usize) {
         self.sub[n] = offset;
+    }
+
+    #[inline]
+    pub fn update(self: Rc<Self>, n: usize, offset: usize) -> Rc<Self> {
+        let mut sub = Rc::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone());
+        sub.set(n, offset);
+        Rc::new(sub)
     }
 
     #[inline]

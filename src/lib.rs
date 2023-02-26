@@ -6,6 +6,7 @@
 #[macro_use]
 extern crate lalrpop_util;
 
+mod backtrack;
 mod compile;
 mod lex;
 lalrpop_mod!(parse);

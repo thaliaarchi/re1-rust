@@ -28,15 +28,15 @@ impl VM<'_, '_> {
             }
             Inst::Match => true,
             Inst::Jmp(x) => {
-                self.set_pc(x);
+                self.pc = x;
                 self.match_recursive(sub)
             }
             Inst::Split(x, y) => {
-                self.set_pc(x);
+                self.pc = x;
                 if self.clone().match_recursive(sub) {
                     return true;
                 }
-                self.set_pc(y);
+                self.pc = y;
                 self.match_recursive(sub)
             }
             Inst::Save(n) => {
@@ -44,7 +44,7 @@ impl VM<'_, '_> {
                     return self.match_recursive(sub);
                 }
                 let old = sub.get(n);
-                sub.set(n, self.offset());
+                sub.set(n, self.offset);
                 if self.match_recursive(sub) {
                     return true;
                 }
@@ -72,20 +72,20 @@ impl VM<'_, '_> {
                     }
                 }
                 Inst::Match => return true,
-                Inst::Jmp(x) => self.set_pc(x),
+                Inst::Jmp(x) => self.pc = x,
                 Inst::Split(x, y) => {
-                    self.set_pc(x);
+                    self.pc = x;
                     if self.clone().match_recursive_loop(sub) {
                         return true;
                     }
-                    self.set_pc(y);
+                    self.pc = y;
                 }
                 Inst::Save(n) => {
                     if n >= sub.len() {
                         continue;
                     }
                     let old = sub.get(n);
-                    sub.set(n, self.offset());
+                    sub.set(n, self.offset);
                     if self.match_recursive_loop(sub) {
                         return true;
                     }
