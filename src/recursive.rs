@@ -3,10 +3,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-use crate::{Inst, VM};
+use crate::{Inst, Sub, VM};
 
 impl VM<'_, '_> {
-    pub fn match_recursive(&mut self, saved: &mut [usize]) -> bool {
+    pub fn match_recursive(&mut self, sub: &mut Sub) -> bool {
         let inst = match self.next_inst() {
             Some(inst) => inst,
             None => return false,
@@ -14,14 +14,14 @@ impl VM<'_, '_> {
         match *inst {
             Inst::Char(ch) => {
                 if let Some(ch1) = self.next_char() {
-                    ch == ch1 && self.match_recursive(saved)
+                    ch == ch1 && self.match_recursive(sub)
                 } else {
                     false
                 }
             }
             Inst::Any => {
                 if self.next_char().is_some() {
-                    self.match_recursive(saved)
+                    self.match_recursive(sub)
                 } else {
                     false
                 }
@@ -29,32 +29,32 @@ impl VM<'_, '_> {
             Inst::Match => true,
             Inst::Jmp(x) => {
                 self.set_pc(x);
-                self.match_recursive(saved)
+                self.match_recursive(sub)
             }
             Inst::Split(x, y) => {
                 self.set_pc(x);
-                if self.clone().match_recursive(saved) {
+                if self.clone().match_recursive(sub) {
                     return true;
                 }
                 self.set_pc(y);
-                self.match_recursive(saved)
+                self.match_recursive(sub)
             }
             Inst::Save(n) => {
-                if n >= saved.len() {
-                    return self.match_recursive(saved);
+                if n >= sub.len() {
+                    return self.match_recursive(sub);
                 }
-                let old = saved[n];
-                saved[n] = self.offset();
-                if self.match_recursive(saved) {
+                let old = sub.get(n);
+                sub.set(n, self.offset());
+                if self.match_recursive(sub) {
                     return true;
                 }
-                saved[n] = old;
+                sub.set(n, old);
                 false
             }
         }
     }
 
-    pub fn match_recursive_loop(&mut self, saved: &mut [usize]) -> bool {
+    pub fn match_recursive_loop(&mut self, sub: &mut Sub) -> bool {
         loop {
             let inst = match self.next_inst() {
                 Some(inst) => inst,
@@ -75,21 +75,21 @@ impl VM<'_, '_> {
                 Inst::Jmp(x) => self.set_pc(x),
                 Inst::Split(x, y) => {
                     self.set_pc(x);
-                    if self.clone().match_recursive_loop(saved) {
+                    if self.clone().match_recursive_loop(sub) {
                         return true;
                     }
                     self.set_pc(y);
                 }
                 Inst::Save(n) => {
-                    if n >= saved.len() {
+                    if n >= sub.len() {
                         continue;
                     }
-                    let old = saved[n];
-                    saved[n] = self.offset();
-                    if self.match_recursive_loop(saved) {
+                    let old = sub.get(n);
+                    sub.set(n, self.offset());
+                    if self.match_recursive_loop(sub) {
                         return true;
                     }
-                    saved[n] = old;
+                    sub.set(n, old);
                     return false;
                 }
             }
