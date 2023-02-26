@@ -6,7 +6,7 @@
 use std::env;
 use std::process::exit;
 
-use re1::{Regexp, VM};
+use re1::{Prog, Regexp, Sub, VM};
 
 fn main() {
     let mut args = env::args();
@@ -26,12 +26,31 @@ fn main() {
     };
     println!("{re}\n");
     let prog = re.compile();
-    println!("{prog}");
-    for s in args {
-        println!("Matching {s}");
-        let mut vm = VM::new(&prog, &s, false);
-        println!("recursive {}", vm.match_recursive(&mut []));
-        vm.reset();
-        println!("recursiveloop {}", vm.match_recursive_loop(&mut []));
+    print!("{prog}");
+    let mut sub = Sub::new(prog.nsub());
+    for (i, s) in args.enumerate() {
+        println!("\n#{i} {s}");
+        regexp_match("recursive", VM::match_recursive, &prog, &s, &mut sub);
+        regexp_match(
+            "recursiveloop",
+            VM::match_recursive_loop,
+            &prog,
+            &s,
+            &mut sub,
+        );
+    }
+}
+
+fn regexp_match<'i, 's, F>(label: &str, matches: F, prog: &'i Prog, s: &'s str, sub: &mut Sub)
+where
+    F: FnOnce(&mut VM<'i, 's>, &mut Sub) -> bool,
+{
+    let mut vm = VM::new(&prog, &s, false);
+    sub.reset();
+    print!("{label} ");
+    if matches(&mut vm, sub) {
+        println!("match {sub}");
+    } else {
+        println!("-no match-");
     }
 }

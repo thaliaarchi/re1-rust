@@ -83,7 +83,7 @@ impl Prog {
         self.insts.get(pc)
     }
 
-    pub fn nsaved(&self) -> usize {
+    pub fn nsub(&self) -> usize {
         let mut count = 0;
         for inst in &self.insts {
             if let Inst::Save(n) = inst {
@@ -161,6 +161,41 @@ impl<'i, 's> VM<'i, 's> {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Sub {
+    sub: Box<[usize]>,
+}
+
+impl Sub {
+    #[inline]
+    pub fn new(nsub: usize) -> Self {
+        debug_assert!(nsub % 2 == 0);
+        Sub {
+            sub: vec![usize::MAX; nsub].into(),
+        }
+    }
+
+    #[inline]
+    pub fn get(&self, n: usize) -> usize {
+        self.sub[n]
+    }
+
+    #[inline]
+    pub fn set(&mut self, n: usize, offset: usize) {
+        self.sub[n] = offset;
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.sub.len()
+    }
+
+    #[inline]
+    pub fn reset(&mut self) {
+        self.sub.fill(usize::MAX);
+    }
+}
+
 impl Display for Regexp {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -208,5 +243,33 @@ impl Display for VM<'_, '_> {
             Some(inst) => write!(f, "{inst}"),
             None => write!(f, "-"),
         }
+    }
+}
+
+impl Display for Sub {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut j = self.len();
+        while j > 0 && self.sub[j - 1] == usize::MAX {
+            j -= 1;
+        }
+        for i in (0..j).step_by(2) {
+            if i != 0 {
+                write!(f, " ")?;
+            }
+            write!(f, "(")?;
+            if self.sub[i] == usize::MAX {
+                write!(f, "?")?;
+            } else {
+                write!(f, "{}", self.sub[i])?;
+            }
+            write!(f, ",")?;
+            if self.sub[i + 1] == usize::MAX {
+                write!(f, "?")?;
+            } else {
+                write!(f, "{}", self.sub[i + 1])?;
+            }
+            write!(f, ")")?;
+        }
+        Ok(())
     }
 }
