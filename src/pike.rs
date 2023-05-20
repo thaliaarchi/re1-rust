@@ -4,36 +4,35 @@
 // license that can be found in the LICENSE file.
 
 use std::mem;
+use std::rc::Rc;
 
 use crate::{Inst, Sub, VM};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Thread {
     pc: usize,
+    sub: Rc<Sub>,
 }
 
 impl Thread {
-    fn new(pc: usize) -> Self {
-        Thread { pc }
+    fn new(pc: usize, sub: Rc<Sub>) -> Self {
+        Thread { pc, sub }
     }
 }
 
 impl VM<'_, '_> {
-    pub fn match_thompsonvm(&mut self, sub_out: &mut Sub) -> bool {
+    pub fn match_pikevm(&mut self, sub_out: &mut Sub) -> bool {
         let mut curr_threads = Vec::new();
         let mut next_threads = Vec::new();
         // visited replaces global gen (generation) in the original
         let mut visited = vec![false; self.insts.len()];
-        add_thread(&mut curr_threads, Thread::new(0), &mut visited, self.insts);
 
         sub_out.reset();
-        if sub_out.len() >= 1 {
-            sub_out.set(0, 0);
-        }
+        let t = Thread::new(0, Rc::new(Sub::new(sub_out.len())));
+        add_thread(&mut curr_threads, t, &mut visited, self.insts, 0);
 
-        let mut matched = false;
+        let mut matched = None;
         loop {
-            let offset = self.offset;
             let ch = self.next_char();
             if curr_threads.len() == 0 {
                 break;
@@ -44,21 +43,18 @@ impl VM<'_, '_> {
                 match self.insts[pc] {
                     Inst::Char(ch1) => {
                         if ch == Some(ch1) {
-                            let t = Thread::new(pc + 1);
-                            add_thread(&mut next_threads, t, &mut visited, self.insts);
+                            let t = Thread::new(pc + 1, t.sub);
+                            add_thread(&mut next_threads, t, &mut visited, self.insts, self.offset);
                         }
                     }
                     Inst::Any => {
                         if ch.is_some() {
-                            let t = Thread::new(pc + 1);
-                            add_thread(&mut next_threads, t, &mut visited, self.insts);
+                            let t = Thread::new(pc + 1, t.sub);
+                            add_thread(&mut next_threads, t, &mut visited, self.insts, self.offset);
                         }
                     }
                     Inst::Match => {
-                        if sub_out.len() >= 2 {
-                            sub_out.set(1, offset);
-                        }
-                        matched = true;
+                        matched = Some(t.sub);
                         break;
                     }
                     // Jmp, Split, Save handled in add_thread, so that
@@ -74,25 +70,32 @@ impl VM<'_, '_> {
                 break;
             }
         }
-        matched
+        if let Some(sub) = matched {
+            sub_out.clone_from(&sub);
+            true
+        } else {
+            false
+        }
     }
 }
 
-fn add_thread(l: &mut Vec<Thread>, t: Thread, visited: &mut [bool], insts: &[Inst]) {
+fn add_thread(l: &mut Vec<Thread>, t: Thread, visited: &mut [bool], insts: &[Inst], offset: usize) {
     let pc = t.pc;
     if visited[pc] {
         return; // already on list
     }
     visited[pc] = true;
-    l.push(t);
 
     match &insts[pc] {
-        Inst::Jmp(x) => add_thread(l, Thread::new(*x), visited, insts),
+        Inst::Jmp(x) => add_thread(l, Thread::new(*x, t.sub), visited, insts, offset),
         Inst::Split(x, y) => {
-            add_thread(l, Thread::new(*x), visited, insts);
-            add_thread(l, Thread::new(*y), visited, insts);
+            add_thread(l, Thread::new(*x, t.sub.clone()), visited, insts, offset);
+            add_thread(l, Thread::new(*y, t.sub), visited, insts, offset);
         }
-        Inst::Save(_) => add_thread(l, Thread::new(pc + 1), visited, insts),
-        _ => {}
+        Inst::Save(n) => {
+            let sub = t.sub.update(*n, offset);
+            add_thread(l, Thread::new(pc + 1, sub), visited, insts, offset);
+        }
+        _ => l.push(t),
     }
 }

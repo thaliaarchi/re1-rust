@@ -10,6 +10,7 @@ mod backtrack;
 mod compile;
 mod lex;
 lalrpop_mod!(parse);
+mod pike;
 mod recursive;
 mod regexp;
 mod thompson;
