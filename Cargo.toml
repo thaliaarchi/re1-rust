@@ -10,7 +10,7 @@ keywords = ["regexp"]
 categories = ["text-processing"]
 
 [dependencies]
-lalrpop-util = "0.19.8"
+lalrpop-util = "0.20"
 
 [build-dependencies]
-lalrpop = { version = "0.19.8", default-features = false }
+lalrpop = { version = "0.20", default-features = false }
