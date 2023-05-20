@@ -70,10 +70,15 @@ pub enum Inst {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prog {
-    pub(crate) insts: Vec<Inst>,
+    insts: Vec<Inst>,
+    nsub: usize,
 }
 
 impl Prog {
+    pub(crate) fn new(insts: Vec<Inst>, nsub: usize) -> Self {
+        Prog { insts, nsub }
+    }
+
     #[inline]
     pub fn insts(&self) -> &[Inst] {
         &self.insts
@@ -84,14 +89,9 @@ impl Prog {
         self.insts.get(pc)
     }
 
+    #[inline]
     pub fn nsub(&self) -> usize {
-        let mut count = 0;
-        for inst in &self.insts {
-            if let Inst::Save(n) = inst {
-                count = count.max(n + 1);
-            }
-        }
-        count
+        self.nsub
     }
 }
 

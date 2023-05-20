@@ -7,30 +7,36 @@ use crate::{Inst, Prog, Regexp};
 
 impl Regexp {
     pub fn compile(&self) -> Prog {
-        let mut prog = Prog {
-            insts: Vec::with_capacity(self.count()),
+        let mut b = ProgBuilder {
+            insts: Vec::with_capacity(self.count_insts() + 1),
+            nsub: 0,
         };
-        prog.push_regexp(self);
-        prog.insts.push(Inst::Match);
-        prog
+        b.push_regexp(self);
+        b.insts.push(Inst::Match);
+        Prog::new(b.insts, b.nsub)
     }
 
-    // how many instructions does r need?
-    pub fn count(&self) -> usize {
+    // Counts the number of instructions needed to compile the regexp.
+    fn count_insts(&self) -> usize {
         match self {
-            Regexp::Alt(left, right) => 2 + left.count() + right.count(),
-            Regexp::Cat(left, right) => left.count() + right.count(),
+            Regexp::Alt(left, right) => 2 + left.count_insts() + right.count_insts(),
+            Regexp::Cat(left, right) => left.count_insts() + right.count_insts(),
             Regexp::Lit(_) => 1,
             Regexp::Dot => 1,
-            Regexp::Paren(_, inner) => 2 + inner.count(),
-            Regexp::Quest(_, inner) => 1 + inner.count(),
-            Regexp::Star(_, inner) => 2 + inner.count(),
-            Regexp::Plus(_, inner) => 1 + inner.count(),
+            Regexp::Paren(_, inner) => 2 + inner.count_insts(),
+            Regexp::Quest(_, inner) => 1 + inner.count_insts(),
+            Regexp::Star(_, inner) => 2 + inner.count_insts(),
+            Regexp::Plus(_, inner) => 1 + inner.count_insts(),
         }
     }
 }
 
-impl Prog {
+struct ProgBuilder {
+    insts: Vec<Inst>,
+    nsub: usize,
+}
+
+impl ProgBuilder {
     fn push_regexp(&mut self, r: &Regexp) -> usize {
         let pc = self.insts.len();
         match r {
@@ -52,6 +58,7 @@ impl Prog {
                 self.insts.push(Inst::Save(2 * n));
                 self.push_regexp(inner);
                 self.insts.push(Inst::Save(2 * n + 1));
+                self.nsub = self.nsub.max(2 * (n + 1));
             }
             Regexp::Quest(greedy, inner) => {
                 let split = self.push_split_placeholder();
@@ -84,7 +91,6 @@ impl Prog {
         pc
     }
 
-    #[inline]
     fn push_split_placeholder(&mut self) -> usize {
         let pc = self.insts.len();
         self.insts.push(Inst::Split(usize::MAX, usize::MAX));
