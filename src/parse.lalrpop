@@ -36,6 +36,7 @@ Single: Box<Regexp> = {
     "(" <Alt> ")" => Box::new(Regexp::Paren(usize::MAX, <>)),
     "(" "?" ":" <Alt> ")",
     CHAR => Box::new(Regexp::Lit(<>)),
+    ":" => Box::new(Regexp::Lit(':')),
     "." => Box::new(Regexp::Dot),
 }
 
