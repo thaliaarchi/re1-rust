@@ -12,5 +12,6 @@ mod lex;
 lalrpop_mod!(parse);
 mod recursive;
 mod regexp;
+mod thompson;
 
 pub use regexp::*;

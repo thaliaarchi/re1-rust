@@ -39,6 +39,7 @@ fn main() {
             &mut sub,
         );
         regexp_match("backtrack", VM::match_backtrack, &prog, &s, &mut sub);
+        regexp_match("thompson", VM::match_thompsonvm, &prog, &s, &mut sub);
     }
 }
 

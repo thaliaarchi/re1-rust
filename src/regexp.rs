@@ -97,7 +97,7 @@ impl Prog {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VM<'i, 's> {
-    insts: &'i [Inst],
+    pub insts: &'i [Inst],
     pub pc: usize,
     s: &'s str,
     pub offset: usize,
