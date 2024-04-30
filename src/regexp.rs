@@ -176,7 +176,7 @@ impl Sub {
         if n < self.sub.len() {
             return self;
         }
-        let mut sub = Rc::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone());
+        let mut sub = Rc::unwrap_or_clone(self);
         sub.set(n, offset);
         Rc::new(sub)
     }
