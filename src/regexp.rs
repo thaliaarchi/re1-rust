@@ -173,6 +173,9 @@ impl Sub {
 
     #[inline]
     pub fn update(self: Rc<Self>, n: usize, offset: usize) -> Rc<Self> {
+        if n < self.sub.len() {
+            return self;
+        }
         let mut sub = Rc::try_unwrap(self).unwrap_or_else(|rc| (*rc).clone());
         sub.set(n, offset);
         Rc::new(sub)

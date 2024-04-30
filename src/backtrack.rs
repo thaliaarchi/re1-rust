@@ -62,9 +62,7 @@ impl VM<'_, '_> {
                         self.pc = x;
                     }
                     Inst::Save(n) => {
-                        if n < sub.len() {
-                            sub = sub.update(n, self.offset);
-                        }
+                        sub = sub.update(n, self.offset);
                     }
                 }
             }
