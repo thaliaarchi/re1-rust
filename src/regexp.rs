@@ -172,13 +172,13 @@ impl Sub {
     }
 
     #[inline]
-    pub fn update(self: Rc<Self>, n: usize, offset: usize) -> Rc<Self> {
+    pub fn update(mut self: Rc<Self>, n: usize, offset: usize) -> Rc<Self> {
         if n < self.sub.len() {
             return self;
         }
-        let mut sub = Rc::unwrap_or_clone(self);
+        let sub = Rc::make_mut(&mut self);
         sub.set(n, offset);
-        Rc::new(sub)
+        self
     }
 
     #[inline]
